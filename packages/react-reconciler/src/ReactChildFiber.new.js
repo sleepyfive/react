@@ -774,8 +774,12 @@ function ChildReconciler(shouldTrackSideEffects) {
     let lastPlacedIndex = 0;
     let newIdx = 0;
     let nextOldFiber = null;
+    // 处理开头的可以复用的
     for (; oldFiber !== null && newIdx < newChildren.length; newIdx++) {
       if (oldFiber.index > newIdx) {
+        // 当前这个newChild对应的是个假值，无fiber，oldFiber置为空，
+        // 下一个oldFiber就是当前的这个
+        // a && <div />这种
         nextOldFiber = oldFiber;
         oldFiber = null;
       } else {
@@ -787,6 +791,7 @@ function ChildReconciler(shouldTrackSideEffects) {
         newChildren[newIdx],
         lanes,
       );
+      // 遇到不能复用的了，退出循环 （key不同，或者原节点为null）
       if (newFiber === null) {
         // TODO: This breaks on empty slots like null children. That's
         // unfortunate because it triggers the slow path all the time. We need
@@ -818,7 +823,7 @@ function ChildReconciler(shouldTrackSideEffects) {
       previousNewFiber = newFiber;
       oldFiber = nextOldFiber;
     }
-
+    // newChildren遍历完毕，删掉多余的fiber节点
     if (newIdx === newChildren.length) {
       // We've reached the end of the new children. We can delete the rest.
       deleteRemainingChildren(returnFiber, oldFiber);
@@ -828,7 +833,7 @@ function ChildReconciler(shouldTrackSideEffects) {
       }
       return resultingFirstChild;
     }
-
+    // fiber遍历结束，根据newChildren创建新的fiber
     if (oldFiber === null) {
       // If we don't have any more existing children we can choose a fast path
       // since the rest will all be insertions.
